@@ -37,7 +37,9 @@ with col_in2:
     motor_rpm_max = st.slider("Max Motor RPM", 1000, 12000, 4000, step=10)
     z1 = st.slider("Motor Sprocket (Z1)", 8, 30, 11, step=1)
     d_eff = st.slider("Drivetrain Eff. (%)", 50, 100, 85, step=1) / 100.0
-    peak_amps = st.slider("Peak Limit (Amps)", 10, 500, 130, step=1)
+    rated_amps = st.slider("Rated Current (Amps)", 10, 300, 85, step=1)
+    rated_torque = st.slider("Rated Torque (Nm)", 0.100, 200.000, 25.000, step=0.100, format="%.3f")
+    peak_torque_motor = st.slider("Peak Torque (Nm)", 1.0, 500.0, 150.000, step=0.100, format="%.3f")
     cont_amps = st.slider("Continuous (Amps)", 10, 300, 85, step=1)
     kt_constant = st.number_input("Motor Torque Constant (Nm/A)", 0.010, 2.000, 0.450, step=0.001, format="%.3f")
 
@@ -76,12 +78,12 @@ sys_v = S * v_cell
 total_ah = P * ah_cell
 total_cells = S * P
 pack_res = (S * (ir_cell / 1000.0)) / P
-v_sag = peak_amps * pack_res
+peak_current = rated_amps * (peak_torque_motor / rated_torque)
+v_sag = peak_current * pack_res
 v_at_load = sys_v - v_sag
-amps_per_cell = peak_amps / P
-c_rating = peak_amps / total_ah
+amps_per_cell = peak_current / P
+c_rating = peak_current / total_ah
 cruising_amps = p_elec / sys_v
-peak_torque_motor = peak_amps * kt_constant
 peak_torque_axle = peak_torque_motor * gear_ratio * d_eff
 
 # --- 3. DYNAMIC OUTPUTS ---
@@ -110,7 +112,9 @@ with out_col2:
     # VERBATIM requirements: Rolling Resistance, Aero Drag, Peak Current, Torque, Max RPM, Power...
     st.write(f"Rolling Resistance: **{f_roll:.3f} N**")
     st.write(f"Aerodynamic Drag: **{f_aero:.3f} N**")
-    st.write(f"Peak Current: **{peak_amps:.3f} A**")
+    st.write(f"Peak Current: **{peak_current:.3f} A**")
+    st.write(f"Peak Torque (Motor): **{peak_torque_motor:.3f} Nm**")
+    st.write(f"Rated Torque: **{rated_torque:.3f} Nm**")
     st.write(f"Peak Torque (Axle): **{peak_torque_axle:.3f} Nm**")
     st.write(f"Max Motor RPM: **{motor_rpm_max} RPM**")
     st.write(f"Cruising Mech Power: **{(p_mech/1000):.3f} kW**")
@@ -136,5 +140,6 @@ with f1:
 with f2:
     st.latex(r"Pack Resistance = \frac{S \times Cell\_IR}{P}")
     st.latex(r"Voltage Sag = Peak\_Amps \times Pack\_Res")
+    st.latex(r"I_{peak} = I_{rated} \times \frac{\tau_{peak}}{\tau_{rated}}")
     st.latex(r"Gear Ratio = \frac{N_{rpm} \times \pi \times Diameter}{60 \times v_{m/s}}")
     st.latex(r"C\_Rating = \frac{Peak\_Amps}{Total\_Ah}")
